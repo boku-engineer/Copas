@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}PDF Text Extraction - Copas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .upload-section {
+        margin: 2rem 0;
+        padding: 2rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #fff;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+
+    .result-section {
+        margin: 2rem 0;
+        padding: 2rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .extracted-text {
+        white-space: pre-wrap;
+        font-family: monospace;
+        background-color: #fff;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        max-height: 500px;
+        overflow-y: auto;
+        line-height: 1.5;
+    }
+
+    .error-message {
+        color: #dc3545;
+        padding: 1rem;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        margin-top: 0.5rem;
+    }
+
+    .success-message {
+        color: #155724;
+        padding: 1rem;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 4px;
+    }
+
+    .file-info {
+        margin-bottom: 1rem;
+        padding: 0.5rem 1rem;
+        background-color: #e9ecef;
+        border-radius: 4px;
+    }
+
+    .copy-button {
+        margin-top: 1rem;
+    }
+
+    h1 {
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        color: #666;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>PDF Text Extraction</h1>
+    <p class="subtitle">Upload a PDF file to extract its text content using AI.</p>
+
+    <div class="upload-section">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="{{ form.pdf_file.id_for_label }}">
+                    {{ form.pdf_file.label }}
+                </label>
+                {{ form.pdf_file }}
+                {% if form.pdf_file.help_text %}
+                    <p class="form-text">
+                        {{ form.pdf_file.help_text }}
+                    </p>
+                {% endif %}
+                {% if form.pdf_file.errors %}
+                    <div class="error-message">
+                        {% for error in form.pdf_file.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Extract Text
+            </button>
+        </form>
+    </div>
+
+    {% if result %}
+        <div class="result-section">
+            {% if result.success %}
+                <h2>Extracted Text</h2>
+
+                {% if filename %}
+                <div class="file-info">
+                    <strong>File:</strong> {{ filename }}
+                </div>
+                {% endif %}
+
+                <div class="extracted-text" id="extracted-text">{{ result.text }}</div>
+
+                <button class="btn btn-secondary copy-button" onclick="copyText()">
+                    Copy to Clipboard
+                </button>
+            {% else %}
+                <h2>Extraction Failed</h2>
+                <div class="error-message">
+                    {{ result.error }}
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyText() {
+    const textElement = document.getElementById('extracted-text');
+    const text = textElement.innerText;
+
+    navigator.clipboard.writeText(text).then(function() {
+        alert('Text copied to clipboard!');
+    }).catch(function(err) {
+        console.error('Failed to copy text: ', err);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Text copied to clipboard!');
+    });
+}
+</script>
+{% endblock %}
