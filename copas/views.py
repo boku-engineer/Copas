@@ -8,13 +8,8 @@ from .services import extract_text_from_pdf
 
 @login_required
 def index(request):
-    return render(request, 'copas/index.html')
-
-
-@login_required
-def pdf_extract_view(request):
     """
-    Handle PDF upload and text extraction.
+    Home page with PDF upload and text extraction.
 
     GET: Display upload form
     POST: Process uploaded PDF and display extracted text
