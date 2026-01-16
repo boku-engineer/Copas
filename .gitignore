@@ -28,3 +28,4 @@ staticfiles/
 
 # Internal documentation
 docs/internal/
+docs/git-workflow.md
