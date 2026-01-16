@@ -11,7 +11,7 @@ from core.gemini_client import ExtractionResult
 
 
 class IndexViewTests(TestCase):
-    """Tests for the index view."""
+    """Tests for the index view (PDF extraction home page)."""
 
     def setUp(self):
         self.client = Client()
@@ -29,14 +29,16 @@ class IndexViewTests(TestCase):
         self.assertIn('login', response.url)
 
     def test_index_loads_for_authenticated_user(self):
-        """Authenticated users should see the index page."""
+        """Authenticated users should see the PDF extraction form."""
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'PDF Text Extraction')
+        self.assertContains(response, 'Upload')
 
 
-class PDFExtractViewTests(TestCase):
-    """Tests for the PDF extraction view."""
+class PDFExtractFunctionalityTests(TestCase):
+    """Tests for PDF extraction functionality on the index page."""
 
     def setUp(self):
         self.client = Client()
@@ -45,22 +47,7 @@ class PDFExtractViewTests(TestCase):
             email='test@example.com',
             password='testpass123'
         )
-        self.url = reverse('copas:pdf_extract')
-
-    def test_pdf_extract_requires_login(self):
-        """Unauthenticated users should be redirected to login."""
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-        self.assertIn('login', response.url)
-
-    def test_pdf_extract_loads_for_authenticated_user(self):
-        """Authenticated users should see the upload form."""
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(self.url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'PDF Text Extraction')
-        self.assertContains(response, 'Upload')
+        self.url = reverse('copas:index')
 
     def test_invalid_file_type_rejected(self):
         """Non-PDF files should be rejected with error."""

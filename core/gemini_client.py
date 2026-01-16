@@ -46,7 +46,7 @@ class GeminiPDFExtractor:
     This class is framework-agnostic and can be used in any Python context.
     """
 
-    GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
     def __init__(self, api_key: str):
         """
@@ -156,7 +156,24 @@ class GeminiPDFExtractor:
                     error="No response from Gemini API"
                 )
 
-            content = candidates[0].get('content', {})
+            candidate = candidates[0]
+
+            # Check finish_reason to detect truncated responses
+            finish_reason = candidate.get('finishReason', '')
+            if finish_reason and finish_reason != 'STOP':
+                reason_messages = {
+                    'MAX_TOKENS': 'Response was truncated due to maximum token limit',
+                    'SAFETY': 'Response was blocked due to safety filters',
+                    'RECITATION': 'Response was blocked due to recitation concerns',
+                    'OTHER': 'Response generation stopped unexpectedly',
+                }
+                error_msg = reason_messages.get(
+                    finish_reason,
+                    f'Response incomplete (finish_reason: {finish_reason})'
+                )
+                return ExtractionResult(success=False, error=error_msg)
+
+            content = candidate.get('content', {})
             parts = content.get('parts', [])
 
             if not parts:
