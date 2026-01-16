@@ -115,6 +115,66 @@ class TestGeminiPDFExtractor(unittest.TestCase):
         self.assertIsNone(result.text)
         self.assertIn('API connection failed', result.error)
 
+    @patch.object(GeminiPDFExtractor, '_call_gemini_api')
+    def test_extract_text_truncated_max_tokens(self, mock_api_call):
+        """Truncated response due to MAX_TOKENS should return error."""
+        mock_api_call.return_value = {
+            'candidates': [{
+                'content': {
+                    'parts': [{'text': 'Partial content...'}]
+                },
+                'finishReason': 'MAX_TOKENS'
+            }]
+        }
+
+        extractor = GeminiPDFExtractor('test-key')
+        pdf_bytes = b'%PDF-1.4 fake pdf'
+
+        result = extractor.extract_text(pdf_bytes)
+
+        self.assertFalse(result.success)
+        self.assertIn('truncated', result.error.lower())
+
+    @patch.object(GeminiPDFExtractor, '_call_gemini_api')
+    def test_extract_text_blocked_safety(self, mock_api_call):
+        """Response blocked by safety filters should return error."""
+        mock_api_call.return_value = {
+            'candidates': [{
+                'content': {
+                    'parts': [{'text': ''}]
+                },
+                'finishReason': 'SAFETY'
+            }]
+        }
+
+        extractor = GeminiPDFExtractor('test-key')
+        pdf_bytes = b'%PDF-1.4 fake pdf'
+
+        result = extractor.extract_text(pdf_bytes)
+
+        self.assertFalse(result.success)
+        self.assertIn('safety', result.error.lower())
+
+    @patch.object(GeminiPDFExtractor, '_call_gemini_api')
+    def test_extract_text_finish_reason_stop_succeeds(self, mock_api_call):
+        """Response with finishReason STOP should succeed."""
+        mock_api_call.return_value = {
+            'candidates': [{
+                'content': {
+                    'parts': [{'text': 'Complete extracted text'}]
+                },
+                'finishReason': 'STOP'
+            }]
+        }
+
+        extractor = GeminiPDFExtractor('test-key')
+        pdf_bytes = b'%PDF-1.4 fake pdf'
+
+        result = extractor.extract_text(pdf_bytes)
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.text, 'Complete extracted text')
+
 
 class TestExtractionResult(unittest.TestCase):
     """Tests for ExtractionResult dataclass."""
