@@ -175,6 +175,57 @@ class TestGeminiPDFExtractor(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertEqual(result.text, 'Complete extracted text')
 
+    @patch.object(GeminiPDFExtractor, '_call_gemini_api')
+    def test_extract_text_returns_token_usage(self, mock_api_call):
+        """Successful extraction should include token usage data."""
+        mock_api_call.return_value = {
+            'candidates': [{
+                'content': {
+                    'parts': [{'text': 'Extracted text content'}]
+                },
+                'finishReason': 'STOP'
+            }],
+            'usageMetadata': {
+                'promptTokenCount': 1500,
+                'candidatesTokenCount': 200,
+                'totalTokenCount': 1700
+            }
+        }
+
+        extractor = GeminiPDFExtractor('test-key')
+        pdf_bytes = b'%PDF-1.4 fake pdf'
+
+        result = extractor.extract_text(pdf_bytes)
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.prompt_tokens, 1500)
+        self.assertEqual(result.completion_tokens, 200)
+        self.assertEqual(result.total_tokens, 1700)
+
+    @patch.object(GeminiPDFExtractor, '_call_gemini_api')
+    def test_extract_text_handles_missing_token_usage(self, mock_api_call):
+        """Extraction should succeed even without token usage data."""
+        mock_api_call.return_value = {
+            'candidates': [{
+                'content': {
+                    'parts': [{'text': 'Extracted text'}]
+                },
+                'finishReason': 'STOP'
+            }]
+            # No usageMetadata
+        }
+
+        extractor = GeminiPDFExtractor('test-key')
+        pdf_bytes = b'%PDF-1.4 fake pdf'
+
+        result = extractor.extract_text(pdf_bytes)
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.text, 'Extracted text')
+        self.assertIsNone(result.prompt_tokens)
+        self.assertIsNone(result.completion_tokens)
+        self.assertIsNone(result.total_tokens)
+
 
 class TestExtractionResult(unittest.TestCase):
     """Tests for ExtractionResult dataclass."""
@@ -192,6 +243,21 @@ class TestExtractionResult(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertIsNone(result.text)
         self.assertEqual(result.error, 'Something went wrong')
+
+    def test_result_with_token_fields(self):
+        """ExtractionResult should support token usage fields."""
+        result = ExtractionResult(
+            success=True,
+            text='Extracted content',
+            prompt_tokens=100,
+            completion_tokens=50,
+            total_tokens=150
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(result.text, 'Extracted content')
+        self.assertEqual(result.prompt_tokens, 100)
+        self.assertEqual(result.completion_tokens, 50)
+        self.assertEqual(result.total_tokens, 150)
 
 
 if __name__ == '__main__':

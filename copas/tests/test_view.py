@@ -7,6 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from unittest.mock import patch
 
 from accounts.models import CustomUser
+from copas.models import ExtractionResult as ExtractionResultModel
 from core.gemini_client import ExtractionResult
 
 
@@ -86,6 +87,66 @@ class PDFExtractFunctionalityTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Extracted Text')
         self.assertContains(response, 'This is the extracted text')
+
+    @patch('copas.views.extract_text_from_pdf')
+    def test_successful_extraction_saves_to_database(self, mock_extract):
+        """Successful extraction should save result to database."""
+        mock_extract.return_value = ExtractionResult(
+            success=True,
+            text='Extracted text for database.',
+            prompt_tokens=100,
+            completion_tokens=50,
+            total_tokens=150
+        )
+
+        self.client.login(username='testuser', password='testpass123')
+
+        pdf_content = b'%PDF-1.4 fake pdf content'
+        pdf_file = SimpleUploadedFile(
+            "document.pdf",
+            pdf_content,
+            content_type="application/pdf"
+        )
+
+        self.assertEqual(ExtractionResultModel.objects.count(), 0)
+
+        response = self.client.post(self.url, {'pdf_file': pdf_file})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(ExtractionResultModel.objects.count(), 1)
+
+        saved = ExtractionResultModel.objects.first()
+        self.assertEqual(saved.user, self.user)
+        self.assertEqual(saved.filename, 'document.pdf')
+        self.assertEqual(saved.file_type, 'PDF')
+        self.assertEqual(saved.extracted_text, 'Extracted text for database.')
+        self.assertEqual(saved.prompt_tokens, 100)
+        self.assertEqual(saved.completion_tokens, 50)
+        self.assertEqual(saved.total_tokens, 150)
+
+    @patch('copas.views.extract_text_from_pdf')
+    def test_extraction_failure_does_not_save_to_database(self, mock_extract):
+        """Failed extraction should NOT save to database."""
+        mock_extract.return_value = ExtractionResult(
+            success=False,
+            error='API connection failed'
+        )
+
+        self.client.login(username='testuser', password='testpass123')
+
+        pdf_content = b'%PDF-1.4 fake pdf content'
+        pdf_file = SimpleUploadedFile(
+            "test.pdf",
+            pdf_content,
+            content_type="application/pdf"
+        )
+
+        self.assertEqual(ExtractionResultModel.objects.count(), 0)
+
+        response = self.client.post(self.url, {'pdf_file': pdf_file})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(ExtractionResultModel.objects.count(), 0)
 
     @patch('copas.views.extract_text_from_pdf')
     def test_extraction_failure_shows_error(self, mock_extract):
