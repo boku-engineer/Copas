@@ -18,6 +18,9 @@ class ExtractionResult:
     success: bool
     text: Optional[str] = None
     error: Optional[str] = None
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
 
 
 def validate_pdf_bytes(pdf_bytes: bytes) -> tuple[bool, str]:
@@ -190,7 +193,19 @@ class GeminiPDFExtractor:
                     error="No text extracted from PDF"
                 )
 
-            return ExtractionResult(success=True, text=text)
+            # Extract token usage from usageMetadata
+            usage_metadata = response.get('usageMetadata', {})
+            prompt_tokens = usage_metadata.get('promptTokenCount')
+            completion_tokens = usage_metadata.get('candidatesTokenCount')
+            total_tokens = usage_metadata.get('totalTokenCount')
+
+            return ExtractionResult(
+                success=True,
+                text=text,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens
+            )
 
         except (KeyError, IndexError) as e:
             return ExtractionResult(
