@@ -122,6 +122,43 @@
         color: #666;
         margin-bottom: 2rem;
     }
+
+    /* Loading state styles */
+    .btn:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loading-text {
+        display: none;
+    }
+
+    .btn.loading .default-text {
+        display: none;
+    }
+
+    .btn.loading .loading-text {
+        display: inline;
+    }
 </style>
 {% endblock %}
 
@@ -131,7 +168,7 @@
     <p class="subtitle">Upload a PDF file to extract its text content using AI.</p>
 
     <div class="upload-section">
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" id="extract-form">
             {% csrf_token %}
 
             <div class="form-group">
@@ -153,8 +190,9 @@
                 {% endif %}
             </div>
 
-            <button type="submit" class="btn btn-primary">
-                Extract Text
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+                <span class="default-text">Extract Text</span>
+                <span class="loading-text"><span class="spinner"></span>Extracting...</span>
             </button>
         </form>
     </div>
@@ -188,6 +226,18 @@
 
 {% block extra_js %}
 <script>
+// Handle form submission loading state
+document.getElementById('extract-form').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submit-btn');
+    const fileInput = document.getElementById('id_pdf_file');
+
+    // Only show loading if a file is selected
+    if (fileInput && fileInput.files.length > 0) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+    }
+});
+
 function copyText() {
     const textElement = document.getElementById('extracted-text');
     const text = textElement.innerText;

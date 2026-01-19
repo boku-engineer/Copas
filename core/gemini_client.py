@@ -114,6 +114,17 @@ class GeminiPDFExtractor:
 
     def _build_request_payload(self, base64_pdf: str) -> dict:
         """Build the Gemini API request payload."""
+        prompt = f"""
+        Look at PAGE 1 of this document.
+        
+        Extract the table data found specifically on PAGE 1 into a Markdown table.
+        - Columns: No., Item No., Description, Brand, Origin, HS Code, Qty, Unit Price, Total.
+        - Do NOT extract data from other pages.
+        - Do NOT include the document headers (Shipper/Consignee) in the table, just the line items.
+        - If this is the first page, start with the table header.
+        - If this is a subsequent page, do NOT repeat the table header row.
+        - If one or few of the columns are not found, return an empty value for that column.
+        """
         return {
             "contents": [{
                 "parts": [
@@ -124,7 +135,7 @@ class GeminiPDFExtractor:
                         }
                     },
                     {
-                        "text": "Extract all text content from this PDF document. Return only the text, preserving paragraph structure. Do not add any commentary or explanation."
+                        "text": prompt
                     }
                 ]
             }]
