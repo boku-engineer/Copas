@@ -4,12 +4,12 @@ Copas Service Layer
 Business logic for copas operations, separated from views
 for better testability and future API support.
 """
+
 import os
 
-from core.gemini_client import (
-    GeminiCachedExtractor,
-    ExtractionResult as CoreExtractionResult
-)
+from core.gemini_client import ExtractionResult as CoreExtractionResult
+from core.gemini_client import GeminiCachedExtractor
+
 from .models import ExtractionResult
 
 
@@ -28,11 +28,11 @@ def extract_text_from_pdf(uploaded_file) -> CoreExtractionResult:
         CoreExtractionResult with extracted text or error
     """
     # Get API key from environment
-    api_key = os.getenv('GEMINI_API_KEY')
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         return CoreExtractionResult(
             success=False,
-            error="Gemini API key not configured. Please set GEMINI_API_KEY in .env file."
+            error="Gemini API key not configured. Please set GEMINI_API_KEY in .env file.",
         )
 
     try:
@@ -47,8 +47,7 @@ def extract_text_from_pdf(uploaded_file) -> CoreExtractionResult:
 
     except Exception as e:
         return CoreExtractionResult(
-            success=False,
-            error=f"An error occurred during extraction: {str(e)}"
+            success=False, error=f"An error occurred during extraction: {str(e)}"
         )
 
 
@@ -60,7 +59,7 @@ def save_extraction_result(
     prompt_tokens: int = None,
     completion_tokens: int = None,
     total_tokens: int = None,
-    file_type: str = 'PDF'
+    file_type: str = "PDF",
 ) -> ExtractionResult:
     """
     Save extraction result to database.
@@ -86,7 +85,7 @@ def save_extraction_result(
         extracted_text=extracted_text,
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
-        total_tokens=total_tokens
+        total_tokens=total_tokens,
     )
 
 

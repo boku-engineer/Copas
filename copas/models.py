@@ -1,22 +1,20 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class ExtractionResult(models.Model):
     """Model to store PDF extraction results."""
 
     FILE_TYPE_CHOICES = [
-        ('PDF', 'PDF'),
+        ("PDF", "PDF"),
         # Future: ('DOCX', 'Word Document'), ('IMAGE', 'Image'), etc.
     ]
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='extraction_results'
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="extraction_results"
     )
     filename = models.CharField(max_length=255)
-    file_type = models.CharField(max_length=50, choices=FILE_TYPE_CHOICES, default='PDF')
+    file_type = models.CharField(max_length=50, choices=FILE_TYPE_CHOICES, default="PDF")
     file_size = models.IntegerField()  # bytes
     extracted_text = models.TextField()
     prompt_tokens = models.IntegerField(null=True, blank=True)
@@ -25,8 +23,8 @@ class ExtractionResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'extraction_result'
-        ordering = ['-created_at']
+        db_table = "extraction_result"
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.filename} - {self.user.username}"
