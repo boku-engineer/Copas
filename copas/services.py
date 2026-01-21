@@ -6,7 +6,10 @@ for better testability and future API support.
 """
 import os
 
-from core.gemini_client import GeminiPDFExtractor, ExtractionResult as CoreExtractionResult
+from core.gemini_client import (
+    GeminiCachedExtractor,
+    ExtractionResult as CoreExtractionResult
+)
 from .models import ExtractionResult
 
 
@@ -15,7 +18,8 @@ def extract_text_from_pdf(uploaded_file) -> CoreExtractionResult:
     Extract text from an uploaded PDF file using Gemini API.
 
     This function bridges Django's UploadedFile with the framework-agnostic
-    GeminiPDFExtractor in the core module.
+    Gemini extractors in the core module. It automatically uses context
+    caching for large PDFs (>5 pages).
 
     Args:
         uploaded_file: Django UploadedFile object
@@ -35,8 +39,8 @@ def extract_text_from_pdf(uploaded_file) -> CoreExtractionResult:
         # Read file content into memory
         pdf_bytes = uploaded_file.read()
 
-        # Create extractor and process
-        extractor = GeminiPDFExtractor(api_key)
+        # Use cached extractor - it automatically routes based on page count
+        extractor = GeminiCachedExtractor(api_key)
         result = extractor.extract_text(pdf_bytes, uploaded_file.name)
 
         return result
