@@ -1,6 +1,7 @@
 """
 Tests for Copas services.
 """
+
 from django.test import TestCase
 
 from accounts.models import CustomUser
@@ -13,37 +14,35 @@ class SaveExtractionResultTests(TestCase):
 
     def setUp(self):
         self.user = CustomUser.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123'
+            username="testuser", email="test@example.com", password="testpass123"
         )
 
     def test_save_extraction_result_creates_record(self):
         """save_extraction_result creates a database record."""
         result = save_extraction_result(
             user=self.user,
-            filename='test.pdf',
+            filename="test.pdf",
             file_size=1024,
-            extracted_text='Extracted content here.'
+            extracted_text="Extracted content here.",
         )
 
         self.assertIsInstance(result, ExtractionResult)
         self.assertEqual(ExtractionResult.objects.count(), 1)
         self.assertEqual(result.user, self.user)
-        self.assertEqual(result.filename, 'test.pdf')
+        self.assertEqual(result.filename, "test.pdf")
         self.assertEqual(result.file_size, 1024)
-        self.assertEqual(result.extracted_text, 'Extracted content here.')
+        self.assertEqual(result.extracted_text, "Extracted content here.")
 
     def test_save_extraction_result_with_token_data(self):
         """save_extraction_result saves token usage data."""
         result = save_extraction_result(
             user=self.user,
-            filename='document.pdf',
+            filename="document.pdf",
             file_size=2048,
-            extracted_text='Some text.',
+            extracted_text="Some text.",
             prompt_tokens=500,
             completion_tokens=100,
-            total_tokens=600
+            total_tokens=600,
         )
 
         self.assertEqual(result.prompt_tokens, 500)
@@ -53,33 +52,30 @@ class SaveExtractionResultTests(TestCase):
     def test_save_extraction_result_default_file_type(self):
         """save_extraction_result defaults file_type to PDF."""
         result = save_extraction_result(
-            user=self.user,
-            filename='test.pdf',
-            file_size=512,
-            extracted_text='Text.'
+            user=self.user, filename="test.pdf", file_size=512, extracted_text="Text."
         )
 
-        self.assertEqual(result.file_type, 'PDF')
+        self.assertEqual(result.file_type, "PDF")
 
     def test_save_extraction_result_custom_file_type(self):
         """save_extraction_result accepts custom file_type."""
         result = save_extraction_result(
             user=self.user,
-            filename='document.docx',
+            filename="document.docx",
             file_size=1024,
-            extracted_text='Word content.',
-            file_type='DOCX'
+            extracted_text="Word content.",
+            file_type="DOCX",
         )
 
-        self.assertEqual(result.file_type, 'DOCX')
+        self.assertEqual(result.file_type, "DOCX")
 
     def test_save_extraction_result_without_tokens(self):
         """save_extraction_result works without token data."""
         result = save_extraction_result(
             user=self.user,
-            filename='no_tokens.pdf',
+            filename="no_tokens.pdf",
             file_size=256,
-            extracted_text='Content without token tracking.'
+            extracted_text="Content without token tracking.",
         )
 
         self.assertIsNone(result.prompt_tokens)
@@ -89,10 +85,7 @@ class SaveExtractionResultTests(TestCase):
     def test_save_extraction_result_returns_model_instance(self):
         """save_extraction_result returns the created model instance."""
         result = save_extraction_result(
-            user=self.user,
-            filename='return_test.pdf',
-            file_size=100,
-            extracted_text='Test.'
+            user=self.user, filename="return_test.pdf", file_size=100, extracted_text="Test."
         )
 
         self.assertIsNotNone(result.id)
@@ -101,16 +94,13 @@ class SaveExtractionResultTests(TestCase):
     def test_save_multiple_extractions_for_same_user(self):
         """Multiple extractions can be saved for the same user."""
         save_extraction_result(
-            user=self.user,
-            filename='first.pdf',
-            file_size=100,
-            extracted_text='First extraction.'
+            user=self.user, filename="first.pdf", file_size=100, extracted_text="First extraction."
         )
         save_extraction_result(
             user=self.user,
-            filename='second.pdf',
+            filename="second.pdf",
             file_size=200,
-            extracted_text='Second extraction.'
+            extracted_text="Second extraction.",
         )
 
         self.assertEqual(ExtractionResult.objects.filter(user=self.user).count(), 2)

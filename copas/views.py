@@ -1,6 +1,6 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
 from .forms import PDFUploadForm
 from .services import extract_text_from_pdf, save_extraction_result
@@ -18,11 +18,11 @@ def index(request):
     filename = None
     file_size = None
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = PDFUploadForm(request.POST, request.FILES)
 
         if form.is_valid():
-            uploaded_file = form.cleaned_data['pdf_file']
+            uploaded_file = form.cleaned_data["pdf_file"]
             filename = uploaded_file.name
             file_size = uploaded_file.size
 
@@ -38,24 +38,28 @@ def index(request):
                     extracted_text=result.text,
                     prompt_tokens=result.prompt_tokens,
                     completion_tokens=result.completion_tokens,
-                    total_tokens=result.total_tokens
+                    total_tokens=result.total_tokens,
                 )
 
                 # Inform user about caching if used
                 if result.used_caching:
                     messages.info(
                         request,
-                        f'Context caching enabled for {result.page_count}-page PDF. '
-                        'Extracted page by page for optimal performance.'
+                        f"Context caching enabled for {result.page_count}-page PDF. "
+                        "Extracted page by page for optimal performance.",
                     )
-                messages.success(request, 'Text extracted and saved successfully!')
+                messages.success(request, "Text extracted and saved successfully!")
             else:
-                messages.error(request, 'Failed to extract text from PDF.')
+                messages.error(request, "Failed to extract text from PDF.")
     else:
         form = PDFUploadForm()
 
-    return render(request, 'copas/pdf_extract.html', {
-        'form': form,
-        'result': result,
-        'filename': filename,
-    })
+    return render(
+        request,
+        "copas/pdf_extract.html",
+        {
+            "form": form,
+            "result": result,
+            "filename": filename,
+        },
+    )

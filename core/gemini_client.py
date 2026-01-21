@@ -6,6 +6,7 @@ Handles communication with Google's Gemini API for PDF text extraction.
 Uses the google-genai SDK for all API calls.
 Supports context caching for large PDFs (>5 pages).
 """
+
 import io
 import os
 from dataclasses import dataclass
@@ -15,7 +16,6 @@ from google import genai
 from google.genai import types
 from pypdf import PdfReader
 
-
 # Default model name, can be overridden via GEMINI_MODEL_NAME environment variable
 DEFAULT_MODEL_NAME = "gemini-2.5-flash"
 
@@ -23,6 +23,7 @@ DEFAULT_MODEL_NAME = "gemini-2.5-flash"
 @dataclass
 class ExtractionResult:
     """Result of PDF text extraction."""
+
     success: bool
     text: Optional[str] = None
     error: Optional[str] = None
@@ -46,7 +47,7 @@ def validate_pdf_bytes(pdf_bytes: bytes) -> tuple[bool, str]:
     if not pdf_bytes:
         return False, "File is empty"
 
-    if not pdf_bytes.startswith(b'%PDF-'):
+    if not pdf_bytes.startswith(b"%PDF-"):
         return False, "File is not a valid PDF"
 
     return True, ""
@@ -68,6 +69,7 @@ def get_page_count(pdf_bytes: bytes) -> int:
 
 class CacheExpiredError(Exception):
     """Raised when the Gemini cache has expired or is invalid."""
+
     pass
 
 
@@ -121,10 +123,10 @@ class GeminiPDFExtractor:
                         role="user",
                         parts=[
                             types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
-                            types.Part.from_text(text=prompt)
-                        ]
+                            types.Part.from_text(text=prompt),
+                        ],
                     )
-                ]
+                ],
             )
 
             # Parse response
@@ -132,8 +134,7 @@ class GeminiPDFExtractor:
 
         except Exception as e:
             return ExtractionResult(
-                success=False,
-                error=f"Extraction failed: {type(e).__name__}: {str(e)}"
+                success=False, error=f"Extraction failed: {type(e).__name__}: {str(e)}"
             )
 
     def _build_prompt(self) -> str:
@@ -154,10 +155,7 @@ class GeminiPDFExtractor:
         """Parse Gemini SDK response into ExtractionResult."""
         # Check for valid candidates
         if not response.candidates:
-            return ExtractionResult(
-                success=False,
-                error="No response from Gemini API"
-            )
+            return ExtractionResult(success=False, error="No response from Gemini API")
 
         candidate = response.candidates[0]
 
@@ -165,14 +163,13 @@ class GeminiPDFExtractor:
         finish_reason = candidate.finish_reason
         if finish_reason and finish_reason.name not in ("STOP", "FINISH_REASON_UNSPECIFIED"):
             reason_messages = {
-                'MAX_TOKENS': 'Response was truncated due to maximum token limit',
-                'SAFETY': 'Response was blocked due to safety filters',
-                'RECITATION': 'Response was blocked due to recitation concerns',
-                'OTHER': 'Response generation stopped unexpectedly',
+                "MAX_TOKENS": "Response was truncated due to maximum token limit",
+                "SAFETY": "Response was blocked due to safety filters",
+                "RECITATION": "Response was blocked due to recitation concerns",
+                "OTHER": "Response generation stopped unexpectedly",
             }
             error_msg = reason_messages.get(
-                finish_reason.name,
-                f'Response incomplete (finish_reason: {finish_reason.name})'
+                finish_reason.name, f"Response incomplete (finish_reason: {finish_reason.name})"
             )
             return ExtractionResult(success=False, error=error_msg)
 
@@ -180,10 +177,7 @@ class GeminiPDFExtractor:
         text = response.text if response.text else ""
 
         if not text:
-            return ExtractionResult(
-                success=False,
-                error="No text extracted from PDF"
-            )
+            return ExtractionResult(success=False, error="No text extracted from PDF")
 
         # Extract token usage
         usage = response.usage_metadata
@@ -196,7 +190,7 @@ class GeminiPDFExtractor:
             text=text,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
-            total_tokens=total_tokens
+            total_tokens=total_tokens,
         )
 
 
@@ -296,9 +290,7 @@ class GeminiCachedExtractor:
                 error_msg = str(e).lower()
                 # If minimum token requirement not met, fall back to batched extraction without caching
                 if "minimum" in error_msg or "token" in error_msg or "too few" in error_msg:
-                    return self._extract_batched_without_cache(
-                        uploaded_file, page_count
-                    )
+                    return self._extract_batched_without_cache(uploaded_file, page_count)
                 raise  # Re-raise if it's a different error
 
             # Calculate batches
@@ -327,8 +319,7 @@ class GeminiCachedExtractor:
 
             # Combine results
             combined_text = "\n\n".join(
-                f"## Pages {start}-{end}\n{text}"
-                for (start, end), text in results.items()
+                f"## Pages {start}-{end}\n{text}" for (start, end), text in results.items()
             )
 
             return ExtractionResult(
@@ -338,18 +329,14 @@ class GeminiCachedExtractor:
                 completion_tokens=total_completion_tokens,
                 total_tokens=total_prompt_tokens + total_completion_tokens,
                 page_count=page_count,
-                used_caching=True
+                used_caching=True,
             )
 
         except CacheExpiredError as e:
-            return ExtractionResult(
-                success=False,
-                error=f"Cache error: {str(e)}"
-            )
+            return ExtractionResult(success=False, error=f"Cache error: {str(e)}")
         except Exception as e:
             return ExtractionResult(
-                success=False,
-                error=f"Extraction failed: {type(e).__name__}: {str(e)}"
+                success=False, error=f"Extraction failed: {type(e).__name__}: {str(e)}"
             )
 
         finally:
@@ -387,8 +374,7 @@ class GeminiCachedExtractor:
 
             # Combine results
             combined_text = "\n\n".join(
-                f"## Pages {start}-{end}\n{text}"
-                for (start, end), text in results.items()
+                f"## Pages {start}-{end}\n{text}" for (start, end), text in results.items()
             )
 
             return ExtractionResult(
@@ -398,13 +384,12 @@ class GeminiCachedExtractor:
                 completion_tokens=total_completion_tokens,
                 total_tokens=total_prompt_tokens + total_completion_tokens,
                 page_count=page_count,
-                used_caching=False
+                used_caching=False,
             )
 
         except Exception as e:
             return ExtractionResult(
-                success=False,
-                error=f"Batched extraction failed: {type(e).__name__}: {str(e)}"
+                success=False, error=f"Batched extraction failed: {type(e).__name__}: {str(e)}"
             )
 
         finally:
@@ -421,10 +406,7 @@ class GeminiCachedExtractor:
         """
         uploaded_file = self.client.files.upload(
             file=io.BytesIO(pdf_bytes),
-            config=types.UploadFileConfig(
-                display_name=filename,
-                mime_type="application/pdf"
-            )
+            config=types.UploadFileConfig(display_name=filename, mime_type="application/pdf"),
         )
         return uploaded_file
 
@@ -444,17 +426,25 @@ class GeminiCachedExtractor:
                 contents=[
                     types.Content(
                         role="user",
-                        parts=[types.Part.from_uri(file_uri=uploaded_file.uri, mime_type="application/pdf")]
+                        parts=[
+                            types.Part.from_uri(
+                                file_uri=uploaded_file.uri, mime_type="application/pdf"
+                            )
+                        ],
                     )
                 ],
                 system_instruction="You are a document parser. Extract table data as Markdown.",
-                ttl=f"{self.CACHE_TTL_SECONDS}s"
-            )
+                ttl=f"{self.CACHE_TTL_SECONDS}s",
+            ),
         )
         return cached_content
 
     def _generate_batch_with_cache(
-        self, cached_content: types.CachedContent, start_page: int, end_page: int, is_first_batch: bool = False
+        self,
+        cached_content: types.CachedContent,
+        start_page: int,
+        end_page: int,
+        is_first_batch: bool = False,
     ) -> dict:
         """
         Generate content for a batch of pages using cached content.
@@ -497,9 +487,7 @@ class GeminiCachedExtractor:
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=prompt,
-                config=types.GenerateContentConfig(
-                    cached_content=cached_content.name
-                )
+                config=types.GenerateContentConfig(cached_content=cached_content.name),
             )
         except Exception as e:
             error_msg = str(e).lower()
@@ -528,7 +516,11 @@ class GeminiCachedExtractor:
         }
 
     def _generate_batch_without_cache(
-        self, uploaded_file: types.File, start_page: int, end_page: int, is_first_batch: bool = False
+        self,
+        uploaded_file: types.File,
+        start_page: int,
+        end_page: int,
+        is_first_batch: bool = False,
     ) -> dict:
         """
         Generate content for a batch of pages WITHOUT using cached content.
@@ -570,11 +562,13 @@ class GeminiCachedExtractor:
                 types.Content(
                     role="user",
                     parts=[
-                        types.Part.from_uri(file_uri=uploaded_file.uri, mime_type="application/pdf"),
-                        types.Part.from_text(text=prompt)
-                    ]
+                        types.Part.from_uri(
+                            file_uri=uploaded_file.uri, mime_type="application/pdf"
+                        ),
+                        types.Part.from_text(text=prompt),
+                    ],
                 )
-            ]
+            ],
         )
 
         # Check finish reason
