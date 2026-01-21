@@ -40,6 +40,14 @@ def index(request):
                     completion_tokens=result.completion_tokens,
                     total_tokens=result.total_tokens
                 )
+
+                # Inform user about caching if used
+                if result.used_caching:
+                    messages.info(
+                        request,
+                        f'Context caching enabled for {result.page_count}-page PDF. '
+                        'Extracted page by page for optimal performance.'
+                    )
                 messages.success(request, 'Text extracted and saved successfully!')
             else:
                 messages.error(request, 'Failed to extract text from PDF.')
