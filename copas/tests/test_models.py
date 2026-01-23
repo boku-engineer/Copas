@@ -34,6 +34,8 @@ class ExtractionResultModelTests(TestCase):
         self.assertIsNone(extraction.prompt_tokens)
         self.assertIsNone(extraction.completion_tokens)
         self.assertIsNone(extraction.total_tokens)
+        self.assertFalse(extraction.used_caching)  # default
+        self.assertIsNone(extraction.model_name)  # default
         self.assertIsNotNone(extraction.created_at)
 
     def test_create_extraction_result_with_tokens(self):
@@ -130,4 +132,50 @@ class ExtractionResultModelTests(TestCase):
 
     def test_db_table_name(self):
         """Model uses custom table name 'extraction_result'."""
-        self.assertEqual(ExtractionResult._meta.db_table, 'extraction_result')
+        self.assertEqual(ExtractionResult._meta.db_table, "extraction_result")
+
+    def test_used_caching_defaults_to_false(self):
+        """used_caching field defaults to False."""
+        extraction = ExtractionResult.objects.create(
+            user=self.user,
+            filename="no_cache.pdf",
+            file_size=1024,
+            extracted_text="No caching used.",
+        )
+
+        self.assertFalse(extraction.used_caching)
+
+    def test_used_caching_can_be_set_true(self):
+        """used_caching field can be set to True."""
+        extraction = ExtractionResult.objects.create(
+            user=self.user,
+            filename="cached.pdf",
+            file_size=10240,
+            extracted_text="Extracted with caching.",
+            used_caching=True,
+        )
+
+        self.assertTrue(extraction.used_caching)
+
+    def test_model_name_defaults_to_none(self):
+        """model_name field defaults to None."""
+        extraction = ExtractionResult.objects.create(
+            user=self.user,
+            filename="no_model.pdf",
+            file_size=1024,
+            extracted_text="No model name specified.",
+        )
+
+        self.assertIsNone(extraction.model_name)
+
+    def test_model_name_can_be_set(self):
+        """model_name field can be set to a model code-name."""
+        extraction = ExtractionResult.objects.create(
+            user=self.user,
+            filename="gemini.pdf",
+            file_size=2048,
+            extracted_text="Extracted with Gemini.",
+            model_name="gemini-2.5-flash",
+        )
+
+        self.assertEqual(extraction.model_name, "gemini-2.5-flash")

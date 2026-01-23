@@ -38,7 +38,9 @@ def index(request):
                     extracted_text=result.text,
                     prompt_tokens=result.prompt_tokens,
                     completion_tokens=result.completion_tokens,
-                    total_tokens=result.total_tokens
+                    total_tokens=result.total_tokens,
+                    used_caching=result.used_caching,
+                    model_name=result.model_name,
                 )
 
                 # Inform user about caching if used

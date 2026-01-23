@@ -31,6 +31,7 @@ class ExtractionResult:
     total_tokens: Optional[int] = None
     page_count: Optional[int] = None
     used_caching: bool = False
+    model_name: Optional[str] = None
 
 
 def validate_pdf_bytes(pdf_bytes: bytes) -> tuple[bool, str]:
@@ -196,7 +197,8 @@ class GeminiPDFExtractor:
             text=text,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
-            total_tokens=total_tokens
+            total_tokens=total_tokens,
+            model_name=self.model_name,
         )
 
 
@@ -338,7 +340,8 @@ class GeminiCachedExtractor:
                 completion_tokens=total_completion_tokens,
                 total_tokens=total_prompt_tokens + total_completion_tokens,
                 page_count=page_count,
-                used_caching=True
+                used_caching=True,
+                model_name=self.model_name,
             )
 
         except CacheExpiredError as e:
@@ -398,7 +401,8 @@ class GeminiCachedExtractor:
                 completion_tokens=total_completion_tokens,
                 total_tokens=total_prompt_tokens + total_completion_tokens,
                 page_count=page_count,
-                used_caching=False
+                used_caching=False,
+                model_name=self.model_name,
             )
 
         except Exception as e:

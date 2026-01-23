@@ -114,3 +114,49 @@ class SaveExtractionResultTests(TestCase):
         )
 
         self.assertEqual(ExtractionResult.objects.filter(user=self.user).count(), 2)
+
+    def test_save_extraction_result_used_caching_defaults_to_false(self):
+        """save_extraction_result defaults used_caching to False."""
+        result = save_extraction_result(
+            user=self.user,
+            filename="no_cache.pdf",
+            file_size=1024,
+            extracted_text="Small PDF extraction.",
+        )
+
+        self.assertFalse(result.used_caching)
+
+    def test_save_extraction_result_with_used_caching_true(self):
+        """save_extraction_result saves used_caching when True."""
+        result = save_extraction_result(
+            user=self.user,
+            filename="large_cached.pdf",
+            file_size=10240,
+            extracted_text="Large PDF extraction with caching.",
+            used_caching=True,
+        )
+
+        self.assertTrue(result.used_caching)
+
+    def test_save_extraction_result_model_name_defaults_to_none(self):
+        """save_extraction_result defaults model_name to None."""
+        result = save_extraction_result(
+            user=self.user,
+            filename="no_model.pdf",
+            file_size=1024,
+            extracted_text="Extraction without model name.",
+        )
+
+        self.assertIsNone(result.model_name)
+
+    def test_save_extraction_result_with_model_name(self):
+        """save_extraction_result saves model_name when provided."""
+        result = save_extraction_result(
+            user=self.user,
+            filename="gemini.pdf",
+            file_size=2048,
+            extracted_text="Extracted with Gemini model.",
+            model_name="gemini-2.5-flash",
+        )
+
+        self.assertEqual(result.model_name, "gemini-2.5-flash")
