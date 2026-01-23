@@ -22,6 +22,8 @@ class ExtractionResult(models.Model):
     prompt_tokens = models.IntegerField(null=True, blank=True)
     completion_tokens = models.IntegerField(null=True, blank=True)
     total_tokens = models.IntegerField(null=True, blank=True)
+    used_caching = models.BooleanField(default=False)
+    model_name = models.CharField(max_length=100, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

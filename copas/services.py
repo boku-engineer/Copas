@@ -57,10 +57,12 @@ def save_extraction_result(
     filename: str,
     file_size: int,
     extracted_text: str,
-    prompt_tokens: int = None,
-    completion_tokens: int = None,
-    total_tokens: int = None,
-    file_type: str = 'PDF'
+    prompt_tokens: int | None = None,
+    completion_tokens: int | None = None,
+    total_tokens: int | None = None,
+    file_type: str = "PDF",
+    used_caching: bool = False,
+    model_name: str | None = None,
 ) -> ExtractionResult:
     """
     Save extraction result to database.
@@ -74,6 +76,8 @@ def save_extraction_result(
         completion_tokens: Tokens used for output (optional)
         total_tokens: Total tokens used (optional)
         file_type: File type (default: 'PDF')
+        used_caching: Whether context caching was used (default: False)
+        model_name: AI model code-name used for extraction (optional)
 
     Returns:
         ExtractionResult model instance
@@ -86,7 +90,9 @@ def save_extraction_result(
         extracted_text=extracted_text,
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
-        total_tokens=total_tokens
+        total_tokens=total_tokens,
+        used_caching=used_caching,
+        model_name=model_name,
     )
 
 

@@ -1,260 +1,337 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}PDF Text Extraction - Copas{% endblock %}
 
-{% block extra_css %}
-<style>
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-
-    .upload-section {
-        margin: 2rem 0;
-        padding: 2rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background-color: #fff;
-    }
-
-    .form-group {
-        margin-bottom: 1rem;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: bold;
-    }
-
-    .form-control {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-
-    .form-text {
-        font-size: 0.875rem;
-        color: #666;
-        margin-top: 0.25rem;
-    }
-
-    .btn {
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 1rem;
-    }
-
-    .btn-primary {
-        background-color: #007bff;
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background-color: #0056b3;
-    }
-
-    .btn-secondary {
-        background-color: #6c757d;
-        color: white;
-    }
-
-    .btn-secondary:hover {
-        background-color: #545b62;
-    }
-
-    .result-section {
-        margin: 2rem 0;
-        padding: 2rem;
-        background-color: #f8f9fa;
-        border-radius: 8px;
-    }
-
-    .extracted-text {
-        white-space: pre-wrap;
-        font-family: monospace;
-        background-color: #fff;
-        padding: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        max-height: 500px;
-        overflow-y: auto;
-        line-height: 1.5;
-    }
-
-    .error-message {
-        color: #dc3545;
-        padding: 1rem;
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        border-radius: 4px;
-        margin-top: 0.5rem;
-    }
-
-    .success-message {
-        color: #155724;
-        padding: 1rem;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-radius: 4px;
-    }
-
-    .file-info {
-        margin-bottom: 1rem;
-        padding: 0.5rem 1rem;
-        background-color: #e9ecef;
-        border-radius: 4px;
-    }
-
-    .copy-button {
-        margin-top: 1rem;
-    }
-
-    h1 {
-        margin-bottom: 0.5rem;
-    }
-
-    .subtitle {
-        color: #666;
-        margin-bottom: 2rem;
-    }
-
-    /* Loading state styles */
-    .btn:disabled {
-        background-color: #6c757d;
-        cursor: not-allowed;
-        opacity: 0.7;
-    }
-
-    .spinner {
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        border-top-color: transparent;
-        animation: spin 0.8s linear infinite;
-        margin-right: 8px;
-        vertical-align: middle;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .loading-text {
-        display: none;
-    }
-
-    .btn.loading .default-text {
-        display: none;
-    }
-
-    .btn.loading .loading-text {
-        display: inline;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container">
-    <h1>PDF Text Extraction</h1>
-    <p class="subtitle">Upload a PDF file to extract its text content using AI.</p>
+<!-- Upload State -->
+<section id="upload-state" class="center-content" {% if result %}style="display: none;"{% endif %}>
+    <div class="card card--upload">
+        <div class="upload-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+        </div>
+        <h1 class="upload-title">Extract Data from PDF</h1>
+        <p class="upload-subtitle">Upload a PDF invoice or packing list to extract structured table data using AI.</p>
 
-    <div class="upload-section">
-        <form method="post" enctype="multipart/form-data" id="extract-form">
+        <form id="upload-form" method="post" enctype="multipart/form-data">
             {% csrf_token %}
 
-            <div class="form-group">
-                <label for="{{ form.pdf_file.id_for_label }}">
-                    {{ form.pdf_file.label }}
-                </label>
-                {{ form.pdf_file }}
-                {% if form.pdf_file.help_text %}
-                    <p class="form-text">
-                        {{ form.pdf_file.help_text }}
-                    </p>
-                {% endif %}
-                {% if form.pdf_file.errors %}
-                    <div class="error-message">
-                        {% for error in form.pdf_file.errors %}
-                            {{ error }}
-                        {% endfor %}
+            {% if form.pdf_file.errors %}
+            <div class="form-errors">
+                {% for error in form.pdf_file.errors %}
+                <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div id="upload-zone" class="upload-zone">
+                <input type="file" id="pdf-file" name="pdf_file" accept=".pdf" hidden>
+                <div class="upload-zone__content">
+                    <div class="upload-zone__icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
                     </div>
-                {% endif %}
+                    <span class="upload-zone__text">
+                        Drag and drop your PDF here, or <button type="button" class="upload-zone__browse" id="browse-btn">browse</button>
+                    </span>
+                    <span class="upload-zone__hint">PDF files up to 10MB</span>
+                </div>
             </div>
 
-            <button type="submit" class="btn btn-primary" id="submit-btn">
-                <span class="default-text">Extract Text</span>
-                <span class="loading-text"><span class="spinner"></span>Extracting...</span>
+            <div id="file-preview" class="file-preview hidden">
+                <div class="file-preview__icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                </div>
+                <div class="file-preview__info">
+                    <div class="file-preview__name" id="file-name"></div>
+                    <div class="file-preview__size" id="file-size"></div>
+                </div>
+                <button type="button" class="file-preview__remove" id="remove-file" title="Remove file">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <button type="submit" id="extract-btn" class="btn btn--primary btn--large" disabled>
+                Extract Data
             </button>
         </form>
     </div>
+</section>
 
-    {% if result %}
-        <div class="result-section">
-            {% if result.success %}
-                <h2>Extracted Text</h2>
+<!-- Analyzing State -->
+<section id="analyzing-state" class="center-content hidden">
+    <div class="card card--analyzing">
+        <div class="loader-pulse">
+            <span class="loader-dot"></span>
+            <span class="loader-dot"></span>
+            <span class="loader-dot"></span>
+        </div>
+        <h2 class="analyzing-title">Analyzing your document...</h2>
+        <p class="analyzing-subtitle" id="analyzing-status">Extracting data with Gemini AI</p>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-bar__fill"></div>
+            </div>
+            <span class="progress-text">Processing...</span>
+        </div>
+    </div>
+</section>
 
-                {% if filename %}
-                <div class="file-info">
-                    <strong>File:</strong> {{ filename }}
+<!-- Report State -->
+<section id="report-state" class="content-wrapper" {% if not result or not result.success %}style="display: none;"{% endif %}>
+    {% if result and result.success %}
+    <div class="report-header">
+        <div class="report-header__top">
+            <h1 class="report-title">Data Report</h1>
+            <button type="button" class="btn btn--secondary" id="new-extraction-btn">
+                New Extraction
+            </button>
+        </div>
+        <p class="report-subtitle">
+            Extracted from <strong>{{ filename }}</strong>
+        </p>
+    </div>
+
+    <!-- Metadata Card -->
+    <div class="card card--metadata">
+        <div class="card__body">
+            <div class="metadata-grid">
+                {% if result.model_name %}
+                <div class="metadata-item">
+                    <span class="metadata-label">Model</span>
+                    <span class="metadata-value">{{ result.model_name }}</span>
                 </div>
                 {% endif %}
-
-                <div class="extracted-text" id="extracted-text">{{ result.text }}</div>
-
-                <button class="btn btn-secondary copy-button" onclick="copyText()">
-                    Copy to Clipboard
-                </button>
-            {% else %}
-                <h2>Extraction Failed</h2>
-                <div class="error-message">
-                    {{ result.error }}
+                {% if result.prompt_tokens %}
+                <div class="metadata-item">
+                    <span class="metadata-label">Input Tokens</span>
+                    <span class="metadata-value">{{ result.prompt_tokens|default:"N/A" }}</span>
                 </div>
-            {% endif %}
+                {% endif %}
+                {% if result.completion_tokens %}
+                <div class="metadata-item">
+                    <span class="metadata-label">Output Tokens</span>
+                    <span class="metadata-value">{{ result.completion_tokens|default:"N/A" }}</span>
+                </div>
+                {% endif %}
+                {% if result.total_tokens %}
+                <div class="metadata-item">
+                    <span class="metadata-label">Total Tokens</span>
+                    <span class="metadata-value">{{ result.total_tokens|default:"N/A" }}</span>
+                </div>
+                {% endif %}
+                <div class="metadata-item">
+                    <span class="metadata-label">Caching</span>
+                    <span class="metadata-value">
+                        {% if result.used_caching %}
+                        <span class="badge badge--success">Enabled</span>
+                        {% else %}
+                        <span class="badge badge--secondary">Not Used</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <!-- Extracted Data Card -->
+    <div class="card card--report">
+        <div class="card__header">
+            <h3 class="card__title">Extracted Text</h3>
+            <button type="button" class="btn btn--ghost btn--icon" id="copy-btn" title="Copy to clipboard">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+            </button>
+        </div>
+        <div class="card__body">
+            <div class="extracted-text" id="extracted-text">{{ result.text }}</div>
+        </div>
+    </div>
+
+    <div class="report-actions">
+        <button type="button" class="btn btn--secondary" id="copy-all-btn">
+            Copy All Data
+        </button>
+    </div>
     {% endif %}
-</div>
+</section>
+
+<!-- Error State (shown on extraction failure) -->
+{% if result and not result.success %}
+<section class="center-content">
+    <div class="card card--upload">
+        <div class="upload-icon" style="color: var(--color-error);">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+        </div>
+        <h1 class="upload-title">Extraction Failed</h1>
+        <p class="upload-subtitle">{{ result.error }}</p>
+        <a href="{% url 'copas:index' %}" class="btn btn--primary btn--large">Try Again</a>
+    </div>
+</section>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Handle form submission loading state
-document.getElementById('extract-form').addEventListener('submit', function(e) {
-    const submitBtn = document.getElementById('submit-btn');
-    const fileInput = document.getElementById('id_pdf_file');
+(function() {
+    // Elements
+    const uploadForm = document.getElementById('upload-form');
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('pdf-file');
+    const browseBtn = document.getElementById('browse-btn');
+    const filePreview = document.getElementById('file-preview');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    const removeFileBtn = document.getElementById('remove-file');
+    const extractBtn = document.getElementById('extract-btn');
+    const uploadState = document.getElementById('upload-state');
+    const analyzingState = document.getElementById('analyzing-state');
+    const copyBtn = document.getElementById('copy-btn');
+    const copyAllBtn = document.getElementById('copy-all-btn');
+    const newExtractionBtn = document.getElementById('new-extraction-btn');
 
-    // Only show loading if a file is selected
-    if (fileInput && fileInput.files.length > 0) {
-        submitBtn.disabled = true;
-        submitBtn.classList.add('loading');
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
-});
 
-function copyText() {
-    const textElement = document.getElementById('extracted-text');
-    const text = textElement.innerText;
+    // Show file preview
+    function showFilePreview(file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        uploadZone.classList.add('hidden');
+        filePreview.classList.remove('hidden');
+        extractBtn.disabled = false;
+    }
 
-    navigator.clipboard.writeText(text).then(function() {
-        alert('Text copied to clipboard!');
-    }).catch(function(err) {
-        console.error('Failed to copy text: ', err);
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('Text copied to clipboard!');
-    });
-}
+    // Clear file
+    function clearFile() {
+        fileInput.value = '';
+        uploadZone.classList.remove('hidden');
+        filePreview.classList.add('hidden');
+        extractBtn.disabled = true;
+    }
+
+    // Browse button click
+    if (browseBtn) {
+        browseBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            fileInput.click();
+        });
+    }
+
+    // Upload zone click
+    if (uploadZone) {
+        uploadZone.addEventListener('click', function(e) {
+            if (e.target !== browseBtn) {
+                fileInput.click();
+            }
+        });
+    }
+
+    // File input change
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                showFilePreview(this.files[0]);
+            }
+        });
+    }
+
+    // Remove file button
+    if (removeFileBtn) {
+        removeFileBtn.addEventListener('click', clearFile);
+    }
+
+    // Drag and drop
+    if (uploadZone) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, function() {
+                uploadZone.classList.add('upload-zone--active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, function() {
+                uploadZone.classList.remove('upload-zone--active');
+            });
+        });
+
+        uploadZone.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                fileInput.files = files;
+                showFilePreview(files[0]);
+            }
+        });
+    }
+
+    // Form submission - show analyzing state
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            if (fileInput.files.length > 0) {
+                uploadState.style.display = 'none';
+                analyzingState.classList.remove('hidden');
+                extractBtn.disabled = true;
+            }
+        });
+    }
+
+    // Copy to clipboard
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            alert('Copied to clipboard!');
+        }).catch(function() {
+            // Fallback
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('Copied to clipboard!');
+        });
+    }
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+            const text = document.getElementById('extracted-text').innerText;
+            copyToClipboard(text);
+        });
+    }
+
+    if (copyAllBtn) {
+        copyAllBtn.addEventListener('click', function() {
+            const text = document.getElementById('extracted-text').innerText;
+            copyToClipboard(text);
+        });
+    }
+
+    // New extraction button
+    if (newExtractionBtn) {
+        newExtractionBtn.addEventListener('click', function() {
+            window.location.href = '{% url "copas:index" %}';
+        });
+    }
+})();
 </script>
 {% endblock %}
